@@ -593,4 +593,12 @@ async function deleteUsuario(id) {
 }
 
 // ── INICIO ──
-window.addEventListener('DOMContentLoaded', () => { renderLogin(); });
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    initDB();
+  } catch(e) {
+    document.getElementById('root').innerHTML = `<div style="padding:2rem;color:red;font-family:sans-serif"><b>Error de configuración:</b> ${e.message}<br><br>Verificá que el archivo js/config.js tenga la URL y clave de Supabase correctas.</div>`;
+    return;
+  }
+  renderLogin();
+});
