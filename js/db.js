@@ -2,8 +2,8 @@
 // db.js - Capa de datos con Supabase
 // ============================================================
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Inicialización compatible con el CDN de Supabase v2
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── USUARIOS ──
 async function dbGetUsuarios() {
