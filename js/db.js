@@ -2,15 +2,12 @@
 // db.js - Capa de datos con Supabase
 // ============================================================
 
-// El CDN UMD de Supabase expone el objeto global como "supabase"
-// con el método createClient directamente en él.
 let db;
 
 function initDB() {
   if (typeof supabase === 'undefined') {
     throw new Error('Supabase SDK no cargado. Verificá tu conexión a internet.');
   }
-  // v2 UMD: supabase.createClient(url, key)
   db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
@@ -18,7 +15,7 @@ function initDB() {
 async function dbGetUsuarios() {
   const { data, error } = await db.from('usuarios').select('*').order('nombre');
   if (error) throw error;
-  return data;
+  return data || [];
 }
 async function dbCreateUsuario(u) {
   const { data, error } = await db.from('usuarios').insert(u).select().single();
@@ -30,17 +27,24 @@ async function dbDeleteUsuario(id) {
   if (error) throw error;
 }
 async function dbLoginUsuario(email, password) {
-  const { data, error } = await db.from('usuarios')
-    .select('*').eq('email', email.toLowerCase()).eq('password', password).single();
-  if (error) return null;
-  return data;
+  // Usamos .eq() en ambos campos y traemos todos los resultados (sin .single())
+  // para evitar el error PGRST116 cuando no encuentra el usuario
+  const { data, error } = await db
+    .from('usuarios')
+    .select('*')
+    .eq('email', email.toLowerCase().trim())
+    .eq('password', password);
+
+  if (error) throw new Error('Error al consultar: ' + error.message);
+  if (!data || data.length === 0) return null;
+  return data[0];
 }
 
 // ── BANCOS ──
 async function dbGetBancos() {
   const { data, error } = await db.from('bancos').select('*').order('nombre');
   if (error) throw error;
-  return data;
+  return data || [];
 }
 async function dbCreateBanco(b) {
   const { data, error } = await db.from('bancos').insert(b).select().single();
@@ -61,7 +65,7 @@ async function dbGetCheques() {
   const { data, error } = await db.from('cheques')
     .select('*, bancos(id, nombre)').order('vencimiento');
   if (error) throw error;
-  return data;
+  return data || [];
 }
 async function dbCreateCheque(c) {
   const { data, error } = await db.from('cheques').insert(c).select().single();
@@ -83,7 +87,7 @@ async function dbGetPrestamos() {
     .select('*, bancos(id, nombre), cuotas_prestamo(*)')
     .order('created_at');
   if (error) throw error;
-  return data.map(p => ({
+  return (data || []).map(p => ({
     ...p,
     cuotas: (p.cuotas_prestamo || []).sort((a, b) => a.orden - b.orden)
   }));
