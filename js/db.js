@@ -2,8 +2,17 @@
 // db.js - Capa de datos con Supabase
 // ============================================================
 
-// Inicialización compatible con el CDN de Supabase v2
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// El CDN UMD de Supabase expone el objeto global como "supabase"
+// con el método createClient directamente en él.
+let db;
+
+function initDB() {
+  if (typeof supabase === 'undefined') {
+    throw new Error('Supabase SDK no cargado. Verificá tu conexión a internet.');
+  }
+  // v2 UMD: supabase.createClient(url, key)
+  db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 // ── USUARIOS ──
 async function dbGetUsuarios() {
@@ -74,7 +83,6 @@ async function dbGetPrestamos() {
     .select('*, bancos(id, nombre), cuotas_prestamo(*)')
     .order('created_at');
   if (error) throw error;
-  // ordenar cuotas por orden
   return data.map(p => ({
     ...p,
     cuotas: (p.cuotas_prestamo || []).sort((a, b) => a.orden - b.orden)
